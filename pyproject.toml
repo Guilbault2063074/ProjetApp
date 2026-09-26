@@ -1,0 +1,19 @@
+[project]
+name = "projetapp"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Guilbault2063074", email = "81373503+Guilbault2063074@users.noreply.github.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "django>=6.1.1",
+]
+
+[project.scripts]
+projetapp = "projetapp:main"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
