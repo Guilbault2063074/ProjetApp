@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Barista Coffee Loyalty Counter</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f7f6; color: #333; margin: 40px; }
+        .top-navigation { display: flex; justify-content: flex-end; max-width: 600px; margin: 0 auto 15px auto; }
+        .admin-link { background: #e0e0e0; color: #333; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; transition: background 0.2s; }
+        .admin-link:hover { background: #d5d5d5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { text-align: center; color: #4a3728; margin-bottom: 30px; margin-top: 5px; }
+        .search-box { position: relative; margin-bottom: 20px; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 12px; box-sizing: border-box; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; transition: border-color 0.2s; }
+        input[type="text"]:focus { border-color: #8b5a2b; }
+        .dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 0 0 8px 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto; z-index: 10; display: none; }
+        .dropdown-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        .dropdown-item:hover { background: #fdf8f4; color: #8b5a2b; }
+        .card-panel { border: 2px solid #8b5a2b; background: #fffdfb; border-radius: 10px; padding: 20px; margin-top: 25px; display: none; }
+        .card-header { font-size: 20px; font-weight: bold; color: #4a3728; margin-bottom: 15px; border-bottom: 1px solid #f1e5db; padding-bottom: 5px; }
+        .stat-line { margin: 10px 0; font-size: 16px; }
+        .reward-alert { color: #d35400; font-weight: bold; background: #fbeee6; padding: 4px 8px; border-radius: 4px; border: 1px solid #f5cba7; margin-left: 10px; display: inline-block; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; transform: scale(1.02); } 100% { opacity: 0.8; } }
+        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .btn-row { display: flex; gap: 10px; }
+        button { flex: 1; padding: 12px; font-size: 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+        .btn-add { background: #27ae60; color: white; }
+        .btn-punch { background: #e67e22; color: white; }
+        .btn-buy-card { background: #2980b9; color: white; }
+        button:hover { opacity: 0.9; }
+        .create-panel { border: 2px dashed #ccc; background: #fafafa; border-radius: 10px; padding: 20px; margin-top: 25px; display: none; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 14px; font-weight: bold; }
+        .btn-save { background: #8b5a2b; color: white; width: 100%; margin-top: 10px; }
+        .error-banner { color: #d32f2f; background: #ffebee; padding: 10px; border-radius: 6px; margin-top: 15px; display: none; text-align: center; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<!-- Dashboard Quick-Link Header -->
+<div class="top-navigation">
+    <a href="/admin/" class="admin-link" target="_blank">⚙️ Open Django Admin</a>
+</div>
+
+<div class="container">
+    <h1>☕ Coffee Loyalty Counter</h1>
+    
+    <!-- Search Section -->
+    <div class="search-box">
+        <input type="text" id="phoneSearch" placeholder="Type customer phone number..." autocomplete="off">
+        <div id="searchDropdown" class="dropdown"></div>
+    </div>
+
+    <!-- Active Client Display Panel -->
+    <div id="clientPanel" class="card-panel">
+        <div id="panelName" class="card-header">John Doe</div>
+        <div class="stat-line">📱 Phone: <span id="panelPhone" style="font-weight: bold;"></span></div>
+        <div class="stat-line">🎯 Regular Stamps: <span id="panelStamps" style="font-weight: bold;">0</span> / 10 <span id="rewardLabel" class="reward-alert" style="display:none;">🎉 FREE REWARD READY!</span></div>
+        <div class="stat-line">💳 Prepaid Cards Left: <span id="panelCards" style="font-weight: bold;">0</span></div>
+        <div class="stat-line">🔋 Active Card Cups Left: <span id="panelCardPunches" style="font-weight: bold; color:#27ae60;">0</span> / 11</div>
+        
+        <div id="actionError" class="error-banner"></div>
+        
+        <div class="btn-group">
+            <div class="btn-row">
+                <button class="btn-add" onclick="triggerAction('add_regular')">➕ Log Coffee Stamp</button>
+                <button class="btn-punch" onclick="triggerAction('punch_prepaid')">⚡ Use Prepaid Punch</button>
+            </div>
+            <button class="btn-buy-card" onclick="triggerAction('add_card')">💳 Sell 1 Prepaid Card (+11 Cups)</button>
+        </div>
+    </div>
+
+    <!-- Inline Registration Form Panel -->
+    <div id="createPanel" class="create-panel">
+        <div class="card-header" style="color: #666; font-size: 18px;">👤 Client Not Found. Create Account?</div>
+        <div id="createError" class="error-banner"></div>
+        
+        <div class="form-group">
+            <label>Phone Number (Prefilled)</label>
+            <input type="text" id="newPhone" readonly>
+        </div>
+        <div class="form-group">
+            <label>First Name</label>
+            <input type="text" id="newFirst" placeholder="e.g. Liam">
+        </div>
+        <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" id="newLast" placeholder="e.g. Tremblay">
+        </div>
+        <div class="form-group">
+            <label>Initial Prepaid Cards Bought (Optional)</label>
+            <input type="number" id="newCards" value="0" min="0">
+        </div>
+        <button class="btn-save" onclick="submitCreateClient()">Complete Registration</button>
+    </div>
+</div>
+
+<script>
+    let activeClientId = null;
+    const searchInput = document.getElementById('phoneSearch');
+    const dropdown = document.getElementById('searchDropdown');
+    const clientPanel = document.getElementById('clientPanel');
+    const createPanel = document.getElementById('createPanel');
+
+    // 1. Dynamic Keyup Client Live Search
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        if (query.length < 1) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        fetch(`/api/search/?q=${encodeURIComponent(query)}`)
+            .then(res => res.json())
+            .then(data => {
+                dropdown.innerHTML = '';
+                if (data.clients.length > 0) {
+                    createPanel.style.display = 'none';
+                    dropdown.style.display = 'block';
+                    data.clients.forEach(client => {
+                        const item = document.createElement('div');
+                        item.className = 'dropdown-item';
+                        item.innerHTML = `<span>${client.name}</span> <span style="color:#888;">${client.phone_number}</span>`;
+                        item.onclick = () => selectClient(client);
+                        dropdown.appendChild(item);
+                    });
+                } else {
+                    dropdown.style.display = 'none';
+                    clientPanel.style.display = 'none';
+                    document.getElementById('newPhone').value = query;
+                    createPanel.style.display = 'block';
+                }
+            })
+            .catch(err => console.error('Search transfer error:', err));
+    });
+
+    // 2. Populate Active Customer Interface Panel
+    function selectClient(client) {
+        activeClientId = client.id;
+        dropdown.style.display = 'none';
+        searchInput.value = client.phone_number;
+        
+        document.getElementById('panelName').innerText = client.name;
+        document.getElementById('panelPhone').innerText = client.phone_number;
+        document.getElementById('panelStamps').innerText = client.current_coffee_count;
+        document.getElementById('panelCards').innerText = client.prepaid_cards_remaining;
+        document.getElementById('panelCardPunches').innerText = client.prepaid_card_coffees_left;
+        
+        const rewardLabel = document.getElementById('rewardLabel');
+        if (parseInt(client.current_coffee_count) === 10) {
+            rewardLabel.style.display = 'inline-block';
+        } else {
+            rewardLabel.style.display = 'none';
+        }
+        
+        document.getElementById('actionError').style.display = 'none';
+        clientPanel.style.display = 'block';
+    }
+
+    // 3. Log System Transactions (Stamp, Punch, Sell Card)
+    function triggerAction(actionName) {
+        if (!activeClientId) return;
+        document.getElementById('actionError').style.display = 'none';
+
+        fetch('/api/action/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ client_id: activeClientId, action: actionName })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                selectClient(data.client);
+            } else {
+                const banner = document.getElementById('actionError');
+                banner.innerText = data.error;
+                banner.style.display = 'block';
+            }
+        })
+        .catch(err => console.error('Action payload failure:', err));
+    }
+
+    // 4. Inline Registration Form Submission
+    function submitCreateClient() {
+        const payload = {
+            phone_number: document.getElementById('newPhone').value,
+            first_name: document.getElementById('newFirst').value.trim(),
+            last_name: document.getElementById('newLast').value.trim(),
+            prepaid_cards_remaining: document.getElementById('newCards').value
+        };
+
+        if (!payload.first_name || !payload.last_name) {
+            alert('Please fill out both first and last names.');
+            return;
+        }
+
+        fetch('/api/create/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('newFirst').value = '';
+                document.getElementById('newLast').value = '';
+                document.getElementById('newCards').value = '0';
+                createPanel.style.display = 'none';
+                selectClient(data.client);
+            } else {
+                const banner = document.getElementById('createError');
+                banner.innerText = data.error;
+                banner.style.display = 'block';
+            }
+        })
+        .catch(err => console.error('Registration processing failure:', err));
+    }
+</script>
