@@ -1,3 +1,7 @@
+## Nom et code permanent
+William Guilbault
+GUIW19080300
+
 # ☕ Coffee Loyalty Management System - Setup Guide
 
 This repository contains a lightweight Point of Sale (POS) barista dashboard and client registry built using **Django 6.x** and **SQLite**. 
